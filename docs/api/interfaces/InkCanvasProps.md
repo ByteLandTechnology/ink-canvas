@@ -6,7 +6,15 @@
 
 # Interface: InkCanvasProps
 
-Configuration props for the InkCanvas component.
+Configuration props for the InkCanvas component
+
+Extends standard HTML div attributes to allow full customization of the
+container element (className, style, data-\*, event handlers, etc.).
+
+## Remarks
+
+All HTML div attributes are passed through to the container element,
+except for the InkCanvas-specific props defined in this interface.
 
 ## Extends
 
@@ -214,7 +222,7 @@ aria-owns.
 
 ### aria-current?
 
-> `optional` **aria-current**: `boolean` \| `"true"` \| `"false"` \| `"page"` \| `"step"` \| `"location"` \| `"date"` \| `"time"`
+> `optional` **aria-current**: `boolean` \| `"time"` \| `"true"` \| `"false"` \| `"page"` \| `"step"` \| `"location"` \| `"date"`
 
 Indicates the element that represents the current item within a container or set of related elements.
 
@@ -291,7 +299,7 @@ Indicates that the element is perceivable but disabled, so it is not editable or
 
 ### ~~aria-dropeffect?~~
 
-> `optional` **aria-dropeffect**: `"none"` \| `"link"` \| `"copy"` \| `"execute"` \| `"move"` \| `"popup"`
+> `optional` **aria-dropeffect**: `"link"` \| `"none"` \| `"copy"` \| `"execute"` \| `"move"` \| `"popup"`
 
 Indicates what functions can be performed when a dragged object is released on the drop target.
 
@@ -365,7 +373,7 @@ in ARIA 1.1
 
 ### aria-haspopup?
 
-> `optional` **aria-haspopup**: `boolean` \| `"true"` \| `"false"` \| `"dialog"` \| `"grid"` \| `"listbox"` \| `"menu"` \| `"tree"`
+> `optional` **aria-haspopup**: `boolean` \| `"dialog"` \| `"menu"` \| `"listbox"` \| `"true"` \| `"false"` \| `"grid"` \| `"tree"`
 
 Indicates the availability and type of interactive popup element, such as menu or dialog, that can be triggered by an element.
 
@@ -825,21 +833,6 @@ Defines the human readable text alternative of aria-valuenow for a range widget.
 
 ---
 
-### autoFit?
-
-> `optional` **autoFit**: `boolean`
-
-Whether to wrap the Ink app in a Box that matches the terminal dimensions.
-When `true`, the children will be rendered inside a Box with width and height set to the terminal's current size.
-
-#### Default
-
-```ts
-true;
-```
-
----
-
 ### autoFocus?
 
 > `optional` **autoFocus**: `boolean`
@@ -894,8 +887,25 @@ true;
 
 > `optional` **cols**: `number`
 
-Fixed number of columns for the terminal.
-If not provided, the terminal will automatically fit to the container's width.
+Fixed number of columns for the terminal
+
+If provided, the terminal will use this exact column count instead of
+auto-fitting to the container width.
+
+#### Remarks
+
+When both `cols` and `rows` are provided, auto-fitting is disabled entirely.
+If only `cols` is provided without `rows`, auto-fitting will still occur
+for rows while columns remain fixed.
+
+#### Example
+
+```tsx
+// Fixed 80-column terminal
+<InkCanvas cols={80}>
+  <MyApp />
+</InkCanvas>
+```
 
 ---
 
@@ -1021,13 +1031,35 @@ If not provided, the terminal will automatically fit to the container's width.
 
 > `optional` **focused**: `boolean`
 
-Whether the canvas is currently focused and should receive keyboard input.
-When `false`, keyboard events will not be captured by the terminal.
+Whether the canvas is currently focused and should receive keyboard input
 
-#### Default
+When `true`, the terminal captures keyboard events and forwards them to the
+Ink application. When `false`, keyboard events are ignored.
+
+#### Remarks
+
+Use this prop to control when the terminal should accept input. For example,
+you might set this to `false` when a modal dialog is open, or when the user
+is interacting with other parts of your application.
+
+#### Default Value
 
 ```ts
 false;
+```
+
+#### Example
+
+```tsx
+const [isFocused, setIsFocused] = useState(false);
+
+<InkCanvas
+  focused={isFocused}
+  onClick={() => setIsFocused(true)}
+  onBlur={() => setIsFocused(false)}
+>
+  <MyApp />
+</InkCanvas>;
 ```
 
 ---
@@ -1078,7 +1110,7 @@ https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/inert
 
 ### inputMode?
 
-> `optional` **inputMode**: `"none"` \| `"search"` \| `"text"` \| `"tel"` \| `"url"` \| `"email"` \| `"numeric"` \| `"decimal"`
+> `optional` **inputMode**: `"search"` \| `"text"` \| `"none"` \| `"tel"` \| `"url"` \| `"email"` \| `"numeric"` \| `"decimal"`
 
 Hints at the type of data that might be entered by the user while editing the element or its contents
 
@@ -2460,7 +2492,10 @@ Use `onKeyUpCapture` or `onKeyDownCapture` instead
 
 > `optional` **onResize**: (`dimensions`) => `void`
 
-Callback triggered when the terminal is resized.
+Callback triggered when the terminal is resized
+
+Called whenever the terminal dimensions change, either due to container
+resizing (with auto-fit) or programmatic resize.
 
 #### Parameters
 
@@ -2468,9 +2503,23 @@ Callback triggered when the terminal is resized.
 
 `ITerminalDimensions`
 
+Object containing the new `cols` and `rows` values
+
 #### Returns
 
 `void`
+
+#### Example
+
+```tsx
+<InkCanvas
+  onResize={(dims) => {
+    console.log(`Terminal resized to ${dims.cols}x${dims.rows}`);
+  }}
+>
+  <MyApp />
+</InkCanvas>
+```
 
 ---
 
@@ -3012,8 +3061,14 @@ Callback triggered when the terminal is resized.
 
 > `optional` **rows**: `number`
 
-Fixed number of rows for the terminal.
-If not provided, the terminal will automatically fit to the container's height.
+Fixed number of rows for the terminal
+
+If provided, the terminal will use this exact row count instead of
+auto-fitting to the container height.
+
+#### See
+
+[cols](#cols) for remarks on auto-fitting behavior
 
 ---
 
@@ -3091,14 +3146,44 @@ If not provided, the terminal will automatically fit to the container's height.
 
 > `optional` **terminalOptions**: `Omit`\<`ITerminalOptions`, `"disableStdin"`\>
 
-Full Xterm.js terminal options configuration.
+Full Xterm.js terminal options configuration
 
-Provides fine-grained control over the terminal appearance and behavior.
-Options provided here take precedence over legacy props like `fontFamily` or `fontSize`.
+Provides fine-grained control over the terminal's appearance and behavior.
+All options from Xterm.js's ITerminalOptions are supported except `disableStdin`,
+which is always set to `false` internally.
+
+#### Remarks
+
+Common options include:
+
+- `fontSize`: Font size in pixels
+- `fontFamily`: Font family string
+- `theme`: Color theme object with properties like `background`, `foreground`, etc.
+- `cursorStyle`: 'block', 'underline', or 'bar'
+- `cursorBlink`: Whether the cursor should blink
 
 #### See
 
 https://xtermjs.org/docs/api/terminal/interfaces/iterminaloptions/
+
+#### Example
+
+```tsx
+<InkCanvas
+  terminalOptions={{
+    fontSize: 16,
+    fontFamily: "JetBrains Mono, monospace",
+    theme: {
+      background: "#1a1b26",
+      foreground: "#a9b1d6",
+    },
+    cursorStyle: "bar",
+    cursorBlink: true,
+  }}
+>
+  <MyApp />
+</InkCanvas>
+```
 
 ---
 

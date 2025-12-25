@@ -8,8 +8,10 @@
 
 > `const` **processShim**: `object`
 
-Default export compatible with Node.js 'process' module structure.
-This object mimics the global `process` object in Node.js.
+Default export compatible with Node.js 'process' module structure
+
+This object mimics the global `process` object in Node.js and is used
+as a drop-in replacement when aliased via the Vite configuration.
 
 ## Type Declaration
 
@@ -17,45 +19,49 @@ This object mimics the global `process` object in Node.js.
 
 > **argv**: `string`[]
 
-Mocked command line arguments.
-
-#### Default Value
-
-```ts
-[];
-```
+Command line arguments (empty in browser)
 
 ### cwd()
 
 > **cwd**: () => `string`
 
-Mocked current working directory function.
+Get current working directory
+
+Mocked current working directory function
+
+Returns a placeholder working directory since the browser doesn't have
+a traditional file system with a current working directory concept.
 
 #### Returns
 
 `string`
 
-Always returns root "/" in the browser environment.
+Always returns "/" as the root directory
+
+#### Example
+
+```typescript
+import { cwd } from "ink-canvas/shims/process";
+console.log(cwd()); // "/"
+```
 
 ### env
 
 > **env**: `Record`\<`string`, `string` \| `undefined`\>
 
-Mocked environment variables.
-Includes defaults for common Node.js variables and Ink-specific settings.
-
-#### Remarks
-
-- `NODE_ENV`: Defaults to "production".
-- `TERM`: Defaults to "xterm-256color" to ensure color support is detected.
+Environment variables object
 
 ### exit()
 
 > **exit**: (`code?`) => `never`
 
-Mocks `process.exit`.
+Exit process (throws error in browser)
 
-Throws an error to indicate an exit attempt, as the browser window typically cannot be closed by scripts.
+Mocks `process.exit` for the browser environment
+
+In Node.js, `process.exit` terminates the process with the given exit code.
+In the browser, we cannot close the window/tab programmatically (for security reasons),
+so we throw an error instead to indicate that an exit was attempted.
 
 #### Parameters
 
@@ -63,23 +69,41 @@ Throws an error to indicate an exit attempt, as the browser window typically can
 
 `number`
 
-The exit code (unused effectively, but included in the error message).
+The exit code (included in the error message)
 
 #### Returns
 
 `never`
 
-Never returns.
+Never returns - always throws an error
 
 #### Throws
 
-Error Always throws 'process.exit(code) called'.
+Error with message 'process.exit(code) called'
+
+#### Example
+
+```typescript
+import { exit } from "ink-canvas/shims/process";
+
+try {
+  exit(0);
+} catch (e) {
+  console.error(e.message); // "process.exit(0) called"
+}
+```
 
 ### nextTick()
 
 > **nextTick**: (`callback`, ...`args`) => `void`
 
-Emulates Node.js `process.nextTick` using `setTimeout`.
+Schedule callback on next tick
+
+Emulates Node.js `process.nextTick` using `setTimeout`
+
+In Node.js, `nextTick` schedules a callback to be invoked in the next
+iteration of the event loop, before any I/O operations. In the browser,
+we approximate this behavior using `setTimeout` with a delay of 0.
 
 #### Parameters
 
@@ -87,23 +111,51 @@ Emulates Node.js `process.nextTick` using `setTimeout`.
 
 (...`args`) => `void`
 
-The function to execute.
+The function to execute on the next tick
 
 ##### args
 
-...`any`[]
+...`unknown`[]
 
-Arguments to pass to the function.
+Arguments to pass to the callback function
 
 #### Returns
 
 `void`
 
+#### Remarks
+
+This is not a perfect emulation since `setTimeout(..., 0)` has different
+timing characteristics than the true Node.js `nextTick`. However, it's
+sufficient for most use cases in Ink.
+
+For better emulation, consider using `queueMicrotask` or `Promise.resolve().then()`,
+but `setTimeout` is used here for broader compatibility.
+
+#### Example
+
+```typescript
+import { nextTick } from "ink-canvas/shims/process";
+
+nextTick(() => {
+  console.log("Executed on next tick");
+});
+console.log("Executed first");
+// Output:
+// "Executed first"
+// "Executed on next tick"
+```
+
 ### off()
 
 > **off**: (`_event`, `_listener`) => `void`
 
-Mocks `process.off` event listener removal.
+Remove event listener (no-op)
+
+Mocks `process.off` event listener removal
+
+In Node.js, this removes a previously registered event listener.
+In the browser, this is a no-op since we don't register any listeners.
 
 #### Parameters
 
@@ -111,13 +163,13 @@ Mocks `process.off` event listener removal.
 
 `string`
 
-The name of the event.
+The name of the event (ignored)
 
 ##### \_listener
 
 (...`args`) => `void`
 
-The callback function.
+The callback function (ignored)
 
 #### Returns
 
@@ -127,7 +179,13 @@ The callback function.
 
 > **on**: (`_event`, `_listener`) => `void`
 
-Mocks `process.on` event listener registration.
+Register event listener (no-op)
+
+Mocks `process.on` event listener registration
+
+In Node.js, this registers listeners for process events like 'exit',
+'uncaughtException', 'SIGINT', etc. In the browser, these events don't
+exist, so this is a no-op.
 
 #### Parameters
 
@@ -135,23 +193,37 @@ Mocks `process.on` event listener registration.
 
 `string`
 
-The name of the event.
+The name of the event (ignored)
 
 ##### \_listener
 
 (...`args`) => `void`
 
-The callback function.
+The callback function (ignored)
 
 #### Returns
 
 `void`
 
+#### Example
+
+```typescript
+import { on } from "ink-canvas/shims/process";
+
+// This does nothing in the browser
+on("exit", () => console.log("Exiting"));
+```
+
 ### once()
 
 > **once**: (`_event`, `_listener`) => `void`
 
-Mocks `process.once` one-time event listener.
+Register one-time event listener (no-op)
+
+Mocks `process.once` one-time event listener registration
+
+In Node.js, this registers a listener that is automatically removed
+after being called once. In the browser, this is a no-op.
 
 #### Parameters
 
@@ -159,13 +231,13 @@ Mocks `process.once` one-time event listener.
 
 `string`
 
-The name of the event.
+The name of the event (ignored)
 
 ##### \_listener
 
 (...`args`) => `void`
 
-The callback function.
+The callback function (ignored)
 
 #### Returns
 
@@ -175,25 +247,19 @@ The callback function.
 
 > **platform**: `string`
 
-Mocked platform identifier.
-
-#### Default Value
-
-```ts
-"browser";
-```
+Platform identifier ("browser")
 
 ### stderr
 
 > **stderr**: `object`
 
-Mocked stderr stream object.
+Standard error stream mock
 
 #### stderr.columns
 
 > **columns**: `number` = `80`
 
-Number of columns in the terminal.
+Number of columns in the terminal
 
 ##### Default Value
 
@@ -205,7 +271,7 @@ Number of columns in the terminal.
 
 > **isTTY**: `boolean` = `true`
 
-Indicates if the stream is a TTY.
+Indicates if the stream is connected to a TTY
 
 ##### Default Value
 
@@ -217,7 +283,7 @@ true;
 
 > **rows**: `number` = `24`
 
-Number of rows in the terminal.
+Number of rows in the terminal
 
 ##### Default Value
 
@@ -229,13 +295,13 @@ Number of rows in the terminal.
 
 > **write**: (`_chunk`) => `boolean`
 
-Mock implementation of write.
+Mock implementation of write method
 
 ##### Parameters
 
 ###### \_chunk
 
-Data to write (unused).
+Data to write (ignored in this mock)
 
 `string` | `Uint8Array`\<`ArrayBufferLike`\>
 
@@ -243,19 +309,21 @@ Data to write (unused).
 
 `boolean`
 
-Always true.
+Always returns true
 
 ### stdin
 
 > **stdin**: `object`
 
-Mocked stdin stream object.
+Standard input stream mock
 
 #### stdin.isTTY
 
 > **isTTY**: `boolean` = `true`
 
-Indicates if the stream is a TTY.
+Indicates if the stream is connected to a TTY
+
+Set to true to enable raw input mode in Ink.
 
 ##### Default Value
 
@@ -267,7 +335,9 @@ true;
 
 > **on**: () => `void`
 
-Mock implementation of on (event listener).
+Registers an event listener
+
+No-op in browser. Event handling is done through TerminalReadableStream.
 
 ##### Returns
 
@@ -277,7 +347,9 @@ Mock implementation of on (event listener).
 
 > **pause**: () => `void`
 
-Mock implementation of pause.
+Pauses the stream
+
+No-op in browser.
 
 ##### Returns
 
@@ -287,7 +359,9 @@ Mock implementation of pause.
 
 > **resume**: () => `void`
 
-Mock implementation of resume.
+Resumes the paused stream
+
+No-op in browser.
 
 ##### Returns
 
@@ -297,7 +371,10 @@ Mock implementation of resume.
 
 > **setRawMode**: () => `void`
 
-Mock implementation of setRawMode.
+Sets raw mode for the input stream
+
+No-op in browser. Xterm.js already provides character-by-character
+input similar to raw mode.
 
 ##### Returns
 
@@ -307,14 +384,16 @@ Mock implementation of setRawMode.
 
 > **stdout**: `object`
 
-Mocked stdout stream object.
-Provides the minimal interface required by some checks before streams are fully piped.
+Standard output stream mock
 
 #### stdout.columns
 
 > **columns**: `number` = `80`
 
-Number of columns in the terminal.
+Number of columns in the terminal
+
+This is a default value. The actual column count is determined by
+the Xterm.js instance dimensions in InkCanvas.
 
 ##### Default Value
 
@@ -326,7 +405,10 @@ Number of columns in the terminal.
 
 > **isTTY**: `boolean` = `true`
 
-Indicates if the stream is a TTY.
+Indicates if the stream is connected to a TTY (terminal)
+
+Set to true so that Ink enables TTY-specific features like colors
+and cursor manipulation.
 
 ##### Default Value
 
@@ -338,7 +420,10 @@ true;
 
 > **rows**: `number` = `24`
 
-Number of rows in the terminal.
+Number of rows in the terminal
+
+This is a default value. The actual row count is determined by
+the Xterm.js instance dimensions in InkCanvas.
 
 ##### Default Value
 
@@ -350,13 +435,16 @@ Number of rows in the terminal.
 
 > **write**: (`_chunk`) => `boolean`
 
-Mock implementation of write.
+Mock implementation of write method
+
+This is a no-op that simply returns true. The actual writing to the
+terminal is handled by TerminalWritableStream in InkCanvas.
 
 ##### Parameters
 
 ###### \_chunk
 
-Data to write (unused).
+Data to write (ignored in this mock)
 
 `string` | `Uint8Array`\<`ArrayBufferLike`\>
 
@@ -364,29 +452,40 @@ Data to write (unused).
 
 `boolean`
 
-Always true.
+Always returns true indicating the write was "successful"
 
 ### version
 
 > **version**: `string`
 
-Mocked Node.js version string.
-
-#### Default Value
-
-```ts
-"";
-```
+Node.js version string (empty in browser)
 
 ### versions
 
 > **versions**: `Record`\<`string`, `string`\>
 
-Mocked versions object containing version strings of dependencies.
+Versions of Node.js dependencies (empty in browser)
 
-#### Default Value
+## Remarks
 
-```ts
-{
-}
+This object is the primary export that gets used when code imports
+`process` or `node:process`. It aggregates all the individual mocked
+properties and methods defined above.
+
+The object structure matches Node.js's process object, allowing code
+that uses `process.env`, `process.stdout`, `process.nextTick`, etc.
+to work without modification in the browser.
+
+## Example
+
+```typescript
+// This works thanks to the alias configuration
+import process from "node:process";
+
+console.log(process.env.NODE_ENV); // "production"
+console.log(process.platform); // "browser"
+
+process.nextTick(() => {
+  console.log("Next tick callback");
+});
 ```

@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { inkCanvasPolyfills } from "./src/plugin";
 import dts from "vite-plugin-dts";
+import { libInjectCss } from "vite-plugin-lib-inject-css";
 import path from "path";
 
 // https://vite.dev/config/
@@ -12,12 +13,13 @@ export default defineConfig({
         plugins: [["babel-plugin-react-compiler"]],
       },
     }),
+    libInjectCss(),
+    inkCanvasPolyfills(true),
     dts({
       insertTypesEntry: true,
       include: ["src"],
       tsconfigPath: "./tsconfig.build.json",
     }),
-    inkCanvasPolyfills(),
   ],
   build: {
     lib: {
@@ -29,8 +31,6 @@ export default defineConfig({
       fileName: (format, entryName) => `${entryName}.${format}.js`,
     },
     rollupOptions: {
-      // Make sure to externalize deps that shouldn't be bundled
-      // into your library
       external: [
         "react",
         "react-dom",
