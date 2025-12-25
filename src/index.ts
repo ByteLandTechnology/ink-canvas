@@ -13,3 +13,4 @@
 
 export { InkCanvas } from "./components/InkCanvas";
 export type { InkCanvasProps, InkCanvasHandle } from "./components/InkCanvas";
+export { default as processShim } from "./shims/process";

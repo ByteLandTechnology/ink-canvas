@@ -1,6 +1,7 @@
 import {
   useRef,
   useEffect,
+  useState,
   useImperativeHandle,
   forwardRef,
   type HTMLAttributes,
@@ -37,6 +38,14 @@ export interface InkCanvasProps extends HTMLAttributes<HTMLDivElement> {
    * If not provided, the terminal will automatically fit to the container's height.
    */
   rows?: number;
+
+  /**
+   * Whether to wrap the Ink app in a Box that matches the terminal dimensions.
+   * When `true`, the children will be rendered inside a Box with width and height set to the terminal's current size.
+   *
+   * @default true
+   */
+  autoFit?: boolean;
 
   /**
    * Full Xterm.js terminal options configuration.
@@ -121,10 +130,21 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
       rows,
       terminalOptions,
       onResize,
+      autoFit = true,
       ...props
     },
     ref,
   ) => {
+    /**
+     * Stores the current terminal dimensions to trigger re-renders when resized.
+     * This is used by the `autoFit` feature to ensure the Ink content is wrapped
+     * in a Box with the correct dimensions.
+     */
+    const [dimensions, setDimensions] = useState<ITerminalDimensions>({
+      cols: 0,
+      rows: 0,
+    });
+
     /**
      * Reference to the container div element where Xterm.js will be mounted.
      */
@@ -183,6 +203,13 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
     );
 
     /**
+     * Ref to store the latest onResize callback.
+     * This allows the terminal resize listener (which is set up once) to always call the
+     * most recent version of the callback without needing to re-bind the listener.
+     */
+    const onResizeRef = useRef(onResize);
+
+    /**
      * Exposes the terminal, dimensions, and Ink instance to the parent component.
      * This allows the parent to access and control these properties imperatively.
      */
@@ -208,12 +235,26 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
     );
 
     /**
-     * Updates the Ink application render when the children prop changes.
-     * This ensures the content inside the terminal reflects the latest React component tree.
+     * Updates the Ink application render when the children prop changes or dimensions update.
+     *
+     * If `autoFit` is true, the children are wrapped in an Ink <Box> with explicit
+     * width and height matching the terminal dimensions. This directs the Ink layout engine
+     * to respect the full available space of the terminal.
      */
     useEffect(() => {
-      instanceRef.current.rerender(children);
-    }, [children]);
+      const instance = instanceRef.current;
+      if (autoFit) {
+        instance.rerender(
+          <Box width={dimensions.cols} height={dimensions.rows}>
+            {children}
+          </Box>,
+        );
+      } else {
+        instance.rerender(children);
+      }
+    }, [children, autoFit, dimensions]);
+
+    useEffect(() => {});
 
     /**
      * Initializes the terminal addon and sets up resize listeners.
@@ -222,27 +263,34 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
      * @remarks
      * - Loads the FitAddon to enable auto-resizing.
      * - Syncs terminal stream dimensions with Xterm.js resizing.
+     * - Updates the local `dimensions` state to trigger a re-render if autoFit is active.
      * - Cleans up the Ink instance on unmount.
      */
     useEffect(() => {
-      terminalRef.current.loadAddon(fitAddonRef.current);
-      terminalRef.current.onResize((dims) => {
+      const terminal = terminalRef.current;
+      const instance = instanceRef.current;
+      terminal.loadAddon(fitAddonRef.current);
+      terminal.onResize((dimensions) => {
         stdoutRef.current?.updateDimensions();
         stderrRef.current?.updateDimensions();
-        onResize?.(dims);
+        onResizeRef.current?.(dimensions);
+        setDimensions(dimensions);
       });
-      return () => instanceRef.current.unmount();
-    }, [onResize]);
+      return () => instance.unmount();
+    }, []);
 
     /**
      * Mounts the Xterm.js terminal into the container DOM element.
      * This action renders the terminal UI onto the screen.
      */
     useEffect(() => {
-      if (!containerRef.current) {
+      const terminal = terminalRef.current;
+      const container = containerRef.current;
+      if (!container) {
         return;
       }
-      terminalRef.current.open(containerRef.current);
+      terminal.open(container);
+      setDimensions({ rows: terminal.rows, cols: terminal.cols });
     }, [containerRef]);
 
     /**
@@ -254,25 +302,24 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
      *   the terminal using the `FitAddon`.
      */
     useEffect(() => {
+      const terminal = terminalRef.current;
+      const container = containerRef.current;
       if (cols && rows) {
-        terminalRef.current.resize(cols, rows);
+        terminal.resize(cols, rows);
         return;
       }
-      if (!containerRef.current) {
+      if (!container) {
         return;
       }
       const onResize = () => {
         const dimensions = fitAddonRef.current.proposeDimensions();
         console.log(dimensions);
         if (dimensions) {
-          terminalRef.current.resize(
-            cols ?? dimensions.cols,
-            rows ?? dimensions.rows,
-          );
+          terminal.resize(cols ?? dimensions.cols, rows ?? dimensions.rows);
         }
       };
       const resizeObserver = new ResizeObserver(onResize);
-      resizeObserver.observe(containerRef.current);
+      resizeObserver.observe(container);
       onResize();
       return () => resizeObserver.disconnect();
     }, [cols, rows, containerRef]);
@@ -282,9 +329,7 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
      * Allows customization of the terminal appearance (font, theme, etc.) at runtime.
      */
     useEffect(() => {
-      if (terminalRef.current) {
-        terminalRef.current.options = terminalOptions!;
-      }
+      terminalRef.current.options = terminalOptions!;
     }, [terminalRef, terminalOptions]);
 
     /**
@@ -292,10 +337,11 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
      * Focuses or blurs the terminal instance based on the `focused` prop.
      */
     useEffect(() => {
+      const terminal = terminalRef.current;
       if (focused) {
-        terminalRef.current?.focus();
+        terminal.focus();
       } else {
-        terminalRef.current?.blur();
+        terminal.blur();
       }
     }, [focused]);
 

@@ -825,6 +825,21 @@ Defines the human readable text alternative of aria-valuenow for a range widget.
 
 ---
 
+### autoFit?
+
+> `optional` **autoFit**: `boolean`
+
+Whether to wrap the Ink app in a Box that matches the terminal dimensions.
+When `true`, the children will be rendered inside a Box with width and height set to the terminal's current size.
+
+#### Default
+
+```ts
+true;
+```
+
+---
+
 ### autoFocus?
 
 > `optional` **autoFocus**: `boolean`

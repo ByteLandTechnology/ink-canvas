@@ -75,6 +75,7 @@ The main component that wraps your Ink application.
 | `rows`            | `number`                                         | `undefined` | Fixed number of rows. If omitted, fits container.    |
 | `terminalOptions` | `ITerminalOptions`                               | `{}`        | Configuration for the Xterm.js instance.             |
 | `onResize`        | `(dims: { cols: number, rows: number }) => void` | -           | Callback fired when terminal dimensions change.      |
+| `autoFit`         | `boolean`                                        | `true`      | Whether to resize Ink layout to match terminal size. |
 | `...divProps`     | `HTMLAttributes<HTMLDivElement>`                 | -           | All other props are passed to the container `div`.   |
 
 #### Ref (`InkCanvasHandle`)

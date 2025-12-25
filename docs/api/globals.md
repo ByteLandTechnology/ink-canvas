@@ -21,3 +21,4 @@ to allow Ink to run seamlessly in a web environment.
 ## Variables
 
 - [InkCanvas](variables/InkCanvas.md)
+- [processShim](variables/processShim.md)

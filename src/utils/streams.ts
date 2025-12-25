@@ -17,39 +17,6 @@ export type BufferEncoding =
   | "binary"
   | "hex";
 
-declare global {
-  namespace NodeJS {
-    interface WriteStream {
-      columns?: number;
-      rows?: number;
-      write(
-        buffer: Uint8Array | string,
-        cb?: (err?: Error | null) => void,
-      ): boolean;
-      write(
-        str: string,
-        encoding?: string,
-        cb?: (err?: Error | null) => void,
-      ): boolean;
-      end(cb?: () => void): this;
-      end(data: string | Uint8Array, cb?: () => void): this;
-      on(event: string, listener: (...args: any[]) => void): this;
-      once(event: string, listener: (...args: any[]) => void): this;
-      removeListener(event: string, listener: (...args: any[]) => void): this;
-      off(event: string, listener: (...args: any[]) => void): this;
-      emit(event: string, ...args: any[]): boolean;
-    }
-    interface ReadStream {
-      setRawMode?(mode: boolean): this;
-      on(event: string, listener: (...args: any[]) => void): this;
-      once(event: string, listener: (...args: any[]) => void): this;
-      removeListener(event: string, listener: (...args: any[]) => void): this;
-      off(event: string, listener: (...args: any[]) => void): this;
-      emit(event: string, ...args: any[]): boolean;
-    }
-  }
-}
-
 /**
  * Interface representing the minimal writable stream API required by Ink's render process.
  *

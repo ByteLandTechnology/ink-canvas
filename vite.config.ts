@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
+import { inkCanvasPolyfills } from "./src/plugin";
 import dts from "vite-plugin-dts";
 import path from "path";
 
@@ -15,26 +15,18 @@ export default defineConfig({
     dts({
       insertTypesEntry: true,
       include: ["src"],
+      tsconfigPath: "./tsconfig.build.json",
     }),
-    nodePolyfills({
-      exclude: ["process"],
-      globals: {
-        Buffer: true,
-        global: true,
-      },
-      protocolImports: true,
-    }),
+    inkCanvasPolyfills(),
   ],
-  resolve: {
-    alias: {
-      "node:process": path.resolve(__dirname, "src/shims/process.ts"),
-    },
-  },
   build: {
     lib: {
-      entry: path.resolve(__dirname, "src/index.ts"),
-      name: "InkCanvas",
-      fileName: (format) => `ink-canvas.${format}.js`,
+      entry: {
+        "ink-canvas": path.resolve(__dirname, "src/index.ts"),
+        "shims/process": path.resolve(__dirname, "src/shims/process.ts"),
+        plugin: path.resolve(__dirname, "src/plugin.ts"),
+      },
+      fileName: (format, entryName) => `${entryName}.${format}.js`,
     },
     rollupOptions: {
       // Make sure to externalize deps that shouldn't be bundled
@@ -45,8 +37,10 @@ export default defineConfig({
         "ink",
         "@xterm/xterm",
         "@xterm/addon-fit",
+        "vite-plugin-node-polyfills",
       ],
       output: {
+        exports: "named",
         globals: {
           react: "React",
           "react-dom": "ReactDOM",

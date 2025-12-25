@@ -74,7 +74,7 @@ export const stdout = {
    * @param _chunk - Data to write (unused).
    * @returns Always true.
    */
-  write: (_chunk: any) => true,
+  write: (_chunk: Uint8Array | string) => true,
   /**
    * Indicates if the stream is a TTY.
    * @defaultValue true
@@ -101,7 +101,7 @@ export const stderr = {
    * @param _chunk - Data to write (unused).
    * @returns Always true.
    */
-  write: (_chunk: any) => true,
+  write: (_chunk: Uint8Array | string) => true,
   /**
    * Indicates if the stream is a TTY.
    * @defaultValue true
@@ -153,7 +153,9 @@ export const stdin = {
  * @param args - Arguments to pass to the function.
  */
 export function nextTick(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   callback: (...args: any[]) => void,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ...args: any[]
 ): void {
   setTimeout(() => callback(...args), 0);
@@ -178,7 +180,10 @@ export function exit(code?: number): never {
  * @param _event - The name of the event.
  * @param _listener - The callback function.
  */
-export function on(_event: string, _listener: (...args: any[]) => void): void {
+export function on(
+  _event: string,
+  _listener: (...args: unknown[]) => void,
+): void {
   // no-op in browser
 }
 
@@ -188,7 +193,10 @@ export function on(_event: string, _listener: (...args: any[]) => void): void {
  * @param _event - The name of the event.
  * @param _listener - The callback function.
  */
-export function off(_event: string, _listener: (...args: any[]) => void): void {
+export function off(
+  _event: string,
+  _listener: (...args: unknown[]) => void,
+): void {
   // no-op in browser
 }
 
@@ -200,7 +208,7 @@ export function off(_event: string, _listener: (...args: any[]) => void): void {
  */
 export function once(
   _event: string,
-  _listener: (...args: any[]) => void,
+  _listener: (...args: unknown[]) => void,
 ): void {
   // no-op in browser
 }

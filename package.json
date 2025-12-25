@@ -22,14 +22,24 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/ink-canvas.umd.js",
+  "main": "./dist/ink-canvas.cjs.js",
   "module": "./dist/ink-canvas.es.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/ink-canvas.es.js",
-      "require": "./dist/ink-canvas.umd.js"
+      "require": "./dist/ink-canvas.cjs.js"
+    },
+    "./shims/process": {
+      "types": "./dist/shims/process.d.ts",
+      "import": "./dist/shims/process.es.js",
+      "require": "./dist/shims/process.cjs.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.es.js",
+      "require": "./dist/plugin.cjs.js"
     }
   },
   "scripts": {
@@ -39,11 +49,11 @@
     "docs": "typedoc --plugin typedoc-plugin-markdown --disableSources --out docs/api src/index.ts && prettier --write docs/api"
   },
   "peerDependencies": {
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
-    "ink": "^6.0.0",
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
+    "@xterm/addon-fit": ">=0.10.0",
+    "@xterm/xterm": ">=6.0.0",
+    "ink": ">=6.0.0",
+    "react": ">=19",
+    "vite-plugin-node-polyfills": ">=0.22.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",
@@ -66,7 +76,6 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
-    "vite-plugin-dts": "^4.5.4",
-    "vite-plugin-node-polyfills": "^0.24.0"
+    "vite-plugin-dts": "^4.5.4"
   }
 }
