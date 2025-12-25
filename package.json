@@ -1,24 +1,55 @@
 {
   "name": "ink-canvas",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "A library for rendering Ink applications in the browser",
+  "keywords": [
+    "react",
+    "ink",
+    "xterm",
+    "terminal"
+  ],
+  "homepage": "https://byteland.app/opensource/ink-canvas",
+  "bugs": {
+    "url": "https://github.com/ByteLandTechnology/ink-canvas/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ByteLandTechnology/ink-canvas.git"
+  },
+  "license": "MIT",
+  "author": "ByteLand Technology <github@byteland.app>",
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/ink-canvas.umd.js",
+  "module": "./dist/ink-canvas.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/ink-canvas.es.js",
+      "require": "./dist/ink-canvas.umd.js"
+    }
+  },
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "husky",
+    "docs": "typedoc --plugin typedoc-plugin-markdown --disableSources --out docs/api src/index.ts && prettier --write docs/api"
   },
-  "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+  "peerDependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "ink": "^6.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",
     "@commitlint/config-conventional": "^20.2.0",
     "@eslint/js": "^9.39.1",
-    "@types/node": "^24.10.1",
+    "@types/events": "^3.0.3",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
@@ -30,8 +61,12 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
+    "typedoc": "^0.28.15",
+    "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-node-polyfills": "^0.24.0"
   }
 }

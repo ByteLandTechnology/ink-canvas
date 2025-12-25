@@ -1,3 +1,7 @@
+**ink-canvas**
+
+---
+
 # ink-canvas
 
 A library for rendering [Ink](https://github.com/vadimdemedes/ink) applications in the browser using [Xterm.js](https://xtermjs.org/).
