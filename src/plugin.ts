@@ -173,6 +173,21 @@ export function inkCanvasPolyfills(dev?: boolean): Plugin[] {
        */
       config() {
         return {
+          /**
+           * Define global constants that will be replaced at build time.
+           *
+           * These definitions inject global variables into the browser environment
+           * that are expected by Node.js modules but don't exist natively in browsers.
+           *
+           * - `global`: Points to `globalThis`, the standard way to access the global
+           *   object in any JavaScript environment (browser, Node.js, web workers, etc.)
+           * - `process`: A placeholder object with minimal properties to satisfy
+           *   basic process checks in browser environments.
+           */
+          define: {
+            global: "globalThis",
+            "process.env": "{}",
+          },
           resolve: {
             /**
              * Deduplicate React and Ink packages to prevent multiple instances.
