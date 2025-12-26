@@ -586,7 +586,7 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
 
       // Fixed dimensions mode: resize to specified size
       if (cols && rows) {
-        terminal.resize(cols, rows);
+        terminal.resize(Math.floor(cols), Math.floor(rows));
         return;
       }
 
@@ -598,7 +598,13 @@ export const InkCanvas = forwardRef<InkCanvasHandle, InkCanvasProps>(
           const dimensions = fitAddon.proposeDimensions();
           if (dimensions) {
             // Use fixed value if provided, otherwise use calculated value
-            terminal.resize(cols ?? dimensions.cols, rows ?? dimensions.rows);
+            const targetCols = Math.floor(cols ?? dimensions.cols);
+            const targetRows = Math.floor(rows ?? dimensions.rows);
+
+            // Ensure dimensions are valid (positive integers) for Xterm.js
+            if (targetCols > 0 && targetRows > 0) {
+              terminal.resize(targetCols, targetRows);
+            }
           }
         }
       };
