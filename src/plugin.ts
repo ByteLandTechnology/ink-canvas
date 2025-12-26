@@ -1,19 +1,30 @@
 /**
  * Ink Canvas Vite Plugin
  *
- * Provides a Vite plugin for automatically configuring Node.js polyfills,
- * enabling Ink applications to run in the browser.
+ * This module provides a Vite plugin that configures the necessary module aliases
+ * to enable Ink applications to run in browser environments.
  *
  * @remarks
- * Ink depends on Node.js global objects like `process`, `Buffer`, and `global`.
- * These objects don't exist in browser environments, so polyfills are required.
+ * Ink is originally designed to run in Node.js terminal environments and depends on
+ * Node.js built-in modules such as `process`, `buffer`, `stream`, and `events`.
+ * These modules are not available in browsers, so polyfills must be provided.
  *
- * This plugin encapsulates:
- * 1. **Process Shim Alias Configuration**: Redirects `node:process` imports to ink-canvas's process shim
- * 2. **Node Polyfills Configuration**: Uses `vite-plugin-node-polyfills` to provide `Buffer` and `global` polyfills
+ * This plugin uses Vite's `resolve.alias` feature to redirect `node:*` protocol imports
+ * to browser-compatible polyfill libraries:
+ *
+ * | Node.js Module   | Polyfill Library      | Description                          |
+ * |------------------|-----------------------|--------------------------------------|
+ * | `node:process`   | `ink-canvas/shims/process` | Custom process shim for Ink      |
+ * | `node:buffer`    | `buffer`              | Buffer API polyfill                  |
+ * | `node:stream`    | `readable-stream`     | Stream API polyfill                  |
+ * | `node:events`    | `events`              | EventEmitter polyfill                |
+ *
+ * **Important**: The polyfill libraries (`buffer`, `readable-stream`, `events`) are
+ * declared as `peerDependencies` of ink-canvas. Library consumers must install these
+ * packages in their own projects.
  *
  * @example
- * Usage in Vite configuration:
+ * Basic usage in Vite configuration:
  * ```typescript
  * // vite.config.ts
  * import { defineConfig } from 'vite';
@@ -28,153 +39,221 @@
  * });
  * ```
  *
+ * @example
+ * Required peer dependencies installation:
+ * ```bash
+ * npm install buffer readable-stream events
+ * # or
+ * pnpm add buffer readable-stream events
+ * ```
+ *
  * @packageDocumentation
  */
 
 import type { Plugin } from "vite";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 import path from "path";
 
 /**
  * Creates an array of Vite plugins for Ink Canvas polyfills
  *
- * This function returns a set of Vite plugins that configure the necessary
- * Node.js polyfills for Ink applications. It resolves the following issues
- * that Ink encounters when running in browser environments:
+ * This function returns Vite plugins that configure module aliases for Node.js
+ * built-in modules, enabling Ink applications to run in browser environments.
  *
- * 1. **Missing process object**: Ink uses `process.env`, `process.stdout`, etc.
- * 2. **Missing Buffer object**: Some dependency libraries use Node.js Buffer API
- * 3. **Missing global object**: Some libraries expect `global` to exist (browsers use `globalThis`)
+ * The plugin addresses the following Node.js dependencies that Ink requires:
+ *
+ * 1. **`node:process`**: Ink uses `process.env`, `process.stdout`, `process.stderr`, etc.
+ *    This is redirected to ink-canvas's custom process shim that provides a mock
+ *    implementation compatible with Ink's requirements.
+ *
+ * 2. **`node:buffer`**: Some dependencies use Node.js Buffer API for binary data handling.
+ *    This is redirected to the `buffer` npm package.
+ *
+ * 3. **`node:stream`**: Ink uses Node.js streams for terminal I/O.
+ *    This is redirected to the `readable-stream` npm package.
+ *
+ * 4. **`node:events`**: Ink depends on Node.js EventEmitter.
+ *    This is redirected to the `events` npm package.
  *
  * @remarks
- * This plugin includes two sub-plugins:
+ * **Plugin Configuration Details:**
  *
- * **vite-plugin-ink-canvas-polyfill**:
- * - Aliases the `node:process` module to ink-canvas's process shim
- * - In development mode, points to the source file (`shims/process.ts`)
- * - In production mode, points to the bundled module (`ink-canvas/shims/process`)
+ * The plugin configures `resolve.dedupe` to prevent duplicate React instances when
+ * using symlinked packages (common during local development with `npm link`):
+ * - `react`, `react-dom`, `react-reconciler`
+ * - `ink`
+ * - `react/jsx-runtime`, `react/jsx-dev-runtime`
  *
- * **vite-plugin-node-polyfills** (from third-party library):
- * - Provides browser polyfills for `Buffer` and `global`
- * - Excludes `process` (since we use a custom shim)
- * - Supports `node:*` protocol imports
+ * The plugin configures `resolve.alias` to redirect Node.js built-in module imports:
+ * - `node:buffer` → `buffer/index.js` (from `buffer` package)
+ * - `node:stream` → `readable-stream` (from `readable-stream` package)
+ * - `node:events` → `events/events` (from `events` package)
+ * - `node:process` → ink-canvas's custom process shim
  *
- * @param dev - Whether in development mode
- *              - `true`: Uses local source file paths as aliases (for library development)
- *              - `false` or `undefined`: Uses npm package paths as aliases (for library consumers)
+ * **Development vs Production Mode:**
  *
- * @returns An array of configured Vite plugins
+ * The `dev` parameter controls how the `node:process` alias is resolved:
+ * - When `dev=true`: Points to the local source file `shims/process.ts`.
+ *   Use this mode when developing the ink-canvas library itself.
+ * - When `dev=false` or `undefined`: Points to the published npm package
+ *   `ink-canvas/shims/process`. Use this mode as a library consumer.
+ *
+ * @param dev - Whether to use development mode for the process shim alias.
+ *              - `true`: Uses local source file path (`shims/process.ts`).
+ *                This is for ink-canvas library development.
+ *              - `false` or `undefined`: Uses npm package path (`ink-canvas/shims/process`).
+ *                This is for library consumers.
+ *
+ * @returns An array containing a single Vite plugin with the configured aliases.
  *
  * @example
- * Development mode usage (when developing within ink-canvas library):
+ * Development mode (for ink-canvas library maintainers):
  * ```typescript
+ * // When working on the ink-canvas library source code
  * inkCanvasPolyfills(true)
  * ```
  *
  * @example
- * Production mode usage (as a library consumer):
+ * Production mode (for library consumers):
  * ```typescript
+ * // In your application's vite.config.ts
  * inkCanvasPolyfills()
- * // or
+ * // or explicitly:
  * inkCanvasPolyfills(false)
  * ```
  *
- * @see {@link https://www.npmjs.com/package/vite-plugin-node-polyfills | vite-plugin-node-polyfills}
+ * @see {@link https://www.npmjs.com/package/buffer | buffer} - Buffer polyfill
+ * @see {@link https://www.npmjs.com/package/readable-stream | readable-stream} - Stream polyfill
+ * @see {@link https://www.npmjs.com/package/events | events} - EventEmitter polyfill
  */
 export function inkCanvasPolyfills(dev?: boolean): Plugin[] {
   /**
-   * Return plugin array containing custom alias plugin and node polyfills plugin
+   * Return an array containing the ink-canvas polyfill plugin.
+   *
+   * The array structure allows for potential future expansion with additional plugins
+   * while maintaining backward compatibility.
    */
   return [
     /**
-     * Custom Vite Plugin: ink-canvas process polyfill
+     * Vite Plugin: ink-canvas-polyfill
      *
-     * This plugin uses Vite's `resolve.alias` configuration to redirect
-     * `node:process` module imports to ink-canvas's custom process shim.
+     * This plugin uses Vite's `config` hook to inject module resolution configuration.
+     * It modifies the `resolve.dedupe` and `resolve.alias` settings to:
+     *
+     * 1. Prevent duplicate React instances in development environments with symlinks
+     * 2. Redirect `node:*` protocol imports to browser-compatible polyfill libraries
+     *
+     * The configuration is merged with the user's existing Vite config, so it won't
+     * override other alias or dedupe settings.
      */
     {
       /**
-       * Plugin name, used for Vite's internal identification
+       * Unique plugin name for Vite's internal identification and debugging.
+       *
+       * This name appears in Vite's plugin resolution logs and error messages,
+       * making it easier to identify issues related to this plugin.
        */
       name: "vite-plugin-ink-canvas-polyfill",
 
       /**
-       * config hook: Modifies Vite configuration
+       * Vite config hook: Modifies Vite configuration
        *
-       * @returns Partial Vite configuration that will be merged into the final config
+       * This hook is called during Vite's configuration resolution phase.
+       * The returned configuration object is deeply merged with the user's config.
+       *
+       * @returns Partial Vite configuration with `resolve.dedupe` and `resolve.alias` settings
+       *
+       * @remarks
+       * **resolve.dedupe**: Ensures that only one instance of each listed package is used,
+       * even when multiple versions are present in node_modules (common with symlinks).
+       * This prevents "multiple React instances" errors.
+       *
+       * **resolve.alias**: Maps Node.js built-in module specifiers to polyfill libraries.
+       * Uses `import.meta.resolve()` to get the absolute path to each polyfill module,
+       * ensuring consistent resolution regardless of the consumer's project structure.
        */
       config() {
         return {
           resolve: {
+            /**
+             * Deduplicate React and Ink packages to prevent multiple instances.
+             *
+             * When using `npm link` or other symlink-based development workflows,
+             * multiple copies of React may be resolved from different node_modules.
+             * This causes React hooks to fail with cryptic errors.
+             *
+             * By listing these packages in `dedupe`, Vite ensures only one copy is used.
+             */
+            dedupe: [
+              "react",
+              "react-dom",
+              "react-reconciler",
+              "ink",
+              "react/jsx-runtime",
+              "react/jsx-dev-runtime",
+            ],
+            /**
+             * Module aliases for Node.js built-in module polyfills.
+             *
+             * Each alias maps a `node:*` protocol import to a browser-compatible polyfill.
+             * The `import.meta.resolve()` function is used to get absolute module paths,
+             * which ensures correct resolution regardless of the consumer's project location.
+             *
+             * Note: These polyfill packages (buffer, readable-stream, events) are
+             * peerDependencies of ink-canvas and must be installed by the consumer.
+             */
             alias: {
               /**
-               * Redirect `node:process` imports to the custom shim
+               * Redirect `node:buffer` imports to the `buffer` polyfill package.
                *
-               * @remarks
-               * - Development mode: Uses `path.resolve(__dirname, "shims/process.ts")` to point to local source file
-               * - Production mode: Uses `"ink-canvas/shims/process"` to point to the npm package module
+               * The Buffer class is used by some Ink dependencies for binary data handling.
+               * We specifically point to `buffer/index.js` for explicit module resolution.
                *
-               * This ensures that when code attempts `import process from 'node:process'`,
-               * it loads our provided browser-compatible shim instead of the native Node.js module.
+               * @see https://www.npmjs.com/package/buffer
+               */
+              "node:buffer": import.meta.resolve("buffer/index.js"),
+
+              /**
+               * Redirect `node:stream` imports to the `readable-stream` polyfill package.
+               *
+               * Ink uses Node.js streams for terminal I/O operations.
+               * The `readable-stream` package provides a browser-compatible implementation
+               * of Node.js Streams API.
+               *
+               * @see https://www.npmjs.com/package/readable-stream
+               */
+              "node:stream": import.meta.resolve("readable-stream"),
+
+              /**
+               * Redirect `node:events` imports to the `events` polyfill package.
+               *
+               * Ink and its dependencies use Node.js EventEmitter extensively.
+               * We point to `events/events` for explicit module resolution.
+               *
+               * @see https://www.npmjs.com/package/events
+               */
+              "node:events": import.meta.resolve("events/events"),
+
+              /**
+               * Redirect `node:process` imports to ink-canvas's custom process shim.
+               *
+               * Ink heavily relies on the `process` global object for environment detection,
+               * terminal information, and I/O streams. The standard `process` polyfill
+               * doesn't satisfy Ink's requirements, so ink-canvas provides a custom shim
+               * that mocks the necessary APIs.
+               *
+               * In development mode (`dev=true`), the alias points to the local source file
+               * to enable hot reloading during ink-canvas development.
+               *
+               * In production mode (`dev=false`), the alias points to the published
+               * ink-canvas package to ensure consistent behavior for library consumers.
                */
               "node:process": dev
                 ? path.resolve(__dirname, "shims/process.ts")
-                : "ink-canvas/shims/process",
+                : import.meta.resolve("ink-canvas/shims/process"),
             },
           },
         };
       },
     },
-
-    /**
-     * vite-plugin-node-polyfills plugin configuration
-     *
-     * Provides browser polyfills for Node.js global objects and modules.
-     */
-    nodePolyfills({
-      /**
-       * Exclude process module from polyfills
-       *
-       * @remarks
-       * We use a custom process shim (configured via the alias above),
-       * so we need to exclude the default process polyfill to avoid conflicts.
-       * The default polyfill may provide an incomplete or incompatible implementation.
-       */
-      exclude: ["process"],
-
-      /**
-       * Configure global object polyfills
-       */
-      globals: {
-        /**
-         * Enable Buffer global object
-         *
-         * @remarks
-         * Many Node.js libraries (including some of Ink's dependencies) use Buffer
-         * for binary data processing. A polyfill is needed to provide this
-         * functionality in the browser.
-         */
-        Buffer: true,
-
-        /**
-         * Enable global object
-         *
-         * @remarks
-         * Node.js uses `global` as the global object, while browsers use `globalThis` or `window`.
-         * This polyfill ensures `global` points to the correct global object.
-         */
-        global: true,
-      },
-
-      /**
-       * Support `node:*` protocol imports
-       *
-       * @remarks
-       * Node.js supports using the `node:` prefix to explicitly import built-in modules
-       * (e.g., `node:buffer`). Enabling this option ensures these imports are correctly
-       * handled and polyfilled.
-       */
-      protocolImports: true,
-    }),
   ];
 }

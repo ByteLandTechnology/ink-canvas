@@ -51,10 +51,12 @@
   "peerDependencies": {
     "@xterm/addon-fit": ">=0.10.0",
     "@xterm/xterm": ">=6.0.0",
+    "buffer": ">=6.0.0",
+    "events": ">=3.0.0",
     "ink": ">=6.0.0",
     "react": ">=19",
     "react-dom": ">=19",
-    "vite-plugin-node-polyfills": ">=0.22.0"
+    "readable-stream": ">=4.0.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",
