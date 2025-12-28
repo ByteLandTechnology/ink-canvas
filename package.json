@@ -1,6 +1,6 @@
 {
   "name": "ink-canvas",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A library for rendering Ink applications in the browser",
   "keywords": [
     "react",
