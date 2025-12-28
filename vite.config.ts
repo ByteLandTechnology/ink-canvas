@@ -132,7 +132,8 @@ export default defineConfig({
        * - shims/process.es.js
        * - plugin.cjs.js
        */
-      fileName: (format, entryName) => `${entryName}.${format}.js`,
+      fileName: (format, entryName) =>
+        `${entryName}.${format === "cjs" ? "cjs" : "js"}`,
     },
 
     /**
@@ -179,10 +180,29 @@ export default defineConfig({
         "ink",
         "@xterm/xterm",
         "@xterm/addon-fit",
-        // Node.js polyfills - should be provided by library consumers
-        "buffer",
         "readable-stream",
+        // Node.js polyfills - should be provided by library consumers
+        "assert",
+        "buffer",
+        "child_process",
+        "constants",
+        "crypto",
         "events",
+        "fs",
+        "http",
+        "https",
+        "inspector",
+        "module",
+        "os",
+        "path",
+        "querystring",
+        "stream",
+        "tty",
+        "url",
+        "util",
+        "vm",
+        "worker_threads",
+        "zlib",
       ],
 
       /**

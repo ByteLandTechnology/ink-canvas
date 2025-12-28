@@ -109,6 +109,44 @@ export default defineConfig({
 });
 ```
 
+### Webpack / Next.js Configuration
+
+For Webpack-based projects like Next.js, use the `InkCanvasWebpackPlugin`. This plugin automatically configures module aliases, fallbacks, and provides global polyfills (process, Buffer) required by Ink.
+
+**Next.js Example (`next.config.mjs`):**
+
+```javascript
+import { InkCanvasWebpackPlugin } from "ink-canvas/plugin";
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  transpilePackages: ["ink-canvas"], // Ensure ink-canvas is transpiled
+  webpack: (config, { isServer }) => {
+    // Only apply the plugin for client-side builds
+    if (!isServer) {
+      config.plugins.push(new InkCanvasWebpackPlugin());
+    }
+    return config;
+  },
+};
+
+export default nextConfig;
+```
+
+**Standard Webpack Example (`webpack.config.js`):**
+
+```javascript
+const { InkCanvasWebpackPlugin } = require("ink-canvas/plugin");
+
+module.exports = {
+  // ...
+  plugins: [
+    new InkCanvasWebpackPlugin(),
+    // ... other plugins
+  ],
+};
+```
+
 ### Polyfills Setup
 
 The `inkCanvasPolyfills` plugin handles the following automatically:

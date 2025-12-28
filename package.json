@@ -22,24 +22,24 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/ink-canvas.cjs.js",
-  "module": "./dist/ink-canvas.es.js",
+  "main": "./dist/ink-canvas.cjs",
+  "module": "./dist/ink-canvas.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/ink-canvas.es.js",
-      "require": "./dist/ink-canvas.cjs.js"
+      "import": "./dist/ink-canvas.js",
+      "require": "./dist/ink-canvas.cjs"
     },
     "./shims/process": {
       "types": "./dist/shims/process.d.ts",
-      "import": "./dist/shims/process.es.js",
-      "require": "./dist/shims/process.cjs.js"
+      "import": "./dist/shims/process.js",
+      "require": "./dist/shims/process.cjs"
     },
     "./plugin": {
       "types": "./dist/plugin.d.ts",
-      "import": "./dist/plugin.es.js",
-      "require": "./dist/plugin.cjs.js"
+      "import": "./dist/plugin.js",
+      "require": "./dist/plugin.cjs"
     }
   },
   "scripts": {
@@ -65,6 +65,7 @@
     "@types/events": "^3.0.3",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@types/webpack": "^5.28.5",
     "@vitejs/plugin-react": "^5.1.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.39.1",

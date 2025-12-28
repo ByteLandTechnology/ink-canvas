@@ -51,6 +51,7 @@
  */
 
 import type { Plugin } from "vite";
+import webpack, { Compiler } from "webpack";
 import path from "path";
 
 /**
@@ -271,4 +272,95 @@ export function inkCanvasPolyfills(dev?: boolean): Plugin[] {
       },
     },
   ];
+}
+
+/**
+ * Ink Canvas Webpack Plugin
+ *
+ * A Webpack 5 compatible plugin that configures module resolution and polyfills
+ * to enable Ink applications to run in the browser.
+ *
+ * @remarks
+ * Use this plugin when building Ink applications with Webpack (e.g., Next.js).
+ * It handles:
+ * - Aliasing Node.js built-ins (`process`, `stream`, etc.) to browser polyfills
+ * - Removing `node:` protocol prefixes which Webpack 5 doesn't handle by default
+ * - Providing global variables (`process`, `Buffer`) expected by Ink dependencies
+ *
+ * @example
+ * **Next.js Configuration (`next.config.mjs`):**
+ * ```javascript
+ * import { InkCanvasWebpackPlugin } from 'ink-canvas/plugin';
+ *
+ * const nextConfig = {
+ *   webpack: (config, { isServer }) => {
+ *     if (!isServer) {
+ *       config.plugins.push(new InkCanvasWebpackPlugin());
+ *     }
+ *     return config;
+ *   },
+ * };
+ *
+ * export default nextConfig;
+ * ```
+ */
+export class InkCanvasWebpackPlugin {
+  /**
+   * Apply the plugin to the Webpack compiler
+   *
+   * @param compiler - The Webpack compiler instance
+   */
+  apply(compiler: Compiler) {
+    const resolve = compiler.options.resolve;
+
+    // ------------------------------------------------------------------------
+    // 1. Configure Aliases & Fallbacks
+    // ------------------------------------------------------------------------
+    // Webpack 5 does not include Node.js polyfills by default. We must explicitely
+    // alias core modules to their browser-compatible counterparts.
+
+    // Force alias 'events', 'process', and 'stream' to our specific polyfills
+    // using require.resolve to ensure absolute paths are used.
+    resolve.alias = {
+      ...resolve.alias,
+      "node:fs": false, // Browser doesn't support file system
+      "react-devtools-core": false, // Prevent React DevTools interference
+      events: require.resolve("events"),
+      module: false, // 'module' is Node.js specific
+      process: require.resolve("ink-canvas/shims/process"), // Our custom shim
+      stream: require.resolve("readable-stream"), // Robust stream polyfill
+    };
+
+    // Configure fallbacks for when packages import 'process' or 'stream' directly
+    resolve.fallback = {
+      ...resolve.fallback,
+      fs: false,
+      events: require.resolve("events"),
+      process: require.resolve("ink-canvas/shims/process"),
+      stream: require.resolve("readable-stream"),
+      module: false,
+    };
+
+    // ------------------------------------------------------------------------
+    // 2. Protocol Imports Handling
+    // ------------------------------------------------------------------------
+    // Many modern Node.js packages use `node:` prefix (e.g., `import ... from 'node:process'`).
+    // Webpack 5 doesn't always resolve these correctly in browser targets.
+    // We use NormalModuleReplacementPlugin to strip the `node:` prefix before resolution,
+    // allowing the aliases above to take effect.
+    new webpack.NormalModuleReplacementPlugin(/^node:/, (resource: any) => {
+      resource.request = resource.request.replace(/^node:/, "");
+    }).apply(compiler);
+
+    // ------------------------------------------------------------------------
+    // 3. Provide Globals
+    // ------------------------------------------------------------------------
+    // Polyfill global variables that Node.js code expects to exist in the global scope.
+    // - `process`: Injected as our custom shim (critical for Ink environment checks)
+    // - `Buffer`: Injected from the 'buffer' package (used for binary data)
+    new webpack.ProvidePlugin({
+      process: require.resolve("ink-canvas/shims/process"),
+      Buffer: ["buffer", "Buffer"],
+    }).apply(compiler);
+  }
 }
