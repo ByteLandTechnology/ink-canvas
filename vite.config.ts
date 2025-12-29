@@ -181,6 +181,7 @@ export default defineConfig({
         "@xterm/xterm",
         "@xterm/addon-fit",
         "readable-stream",
+        "webpack",
         // Node.js polyfills - should be provided by library consumers
         "assert",
         "buffer",
