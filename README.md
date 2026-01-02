@@ -4,6 +4,8 @@ A library for rendering [Ink](https://github.com/vadimdemedes/ink) applications 
 
 `ink-canvas` bridges the gap between Node.js-based CLI UIs built with Ink and web-based terminal emulators. It provides custom stream implementations and Node.js environment mocks that allow Ink to render directly into an Xterm.js instance running in a React application.
 
+**[Documentation Website](https://ink-canvas.byteland.app)**
+
 ![License](https://img.shields.io/npm/l/ink-canvas)
 ![Version](https://img.shields.io/npm/v/ink-canvas)
 
