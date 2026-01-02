@@ -329,6 +329,7 @@ export class InkCanvasWebpackPlugin {
       module: false, // 'module' is Node.js specific
       process: require.resolve("ink-canvas/shims/process"), // Our custom shim
       stream: require.resolve("readable-stream"), // Robust stream polyfill
+      ink: require.resolve("ink"), // Dedupe ink to prevent "Invalid hook call" errors
     };
 
     // Configure fallbacks for when packages import 'process' or 'stream' directly
