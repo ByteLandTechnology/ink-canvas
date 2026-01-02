@@ -1,0 +1,6 @@
+/.next/
+/app/_meta.global.ts
+/app/docs/
+/next-env.d.ts
+/out/
+/public/docs/
